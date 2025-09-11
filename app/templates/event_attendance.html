@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}Event Attendance{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-8">
+
+  <!-- Event Header + Live Clock -->
+  <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
+    <div>
+      <h2 class="text-3xl font-bold text-white tracking-wide">📅 {{ event.event_name }} - Attendance</h2>
+      <p class="text-gray-300 mt-1">Date: {{ event.event_date }} | Semester: {{ event.semester }}</p>
+      {% if event.cutoff_time %}
+      <p class="text-gray-400 mt-1">⏱ Attendance Cutoff Time: {{ event.cutoff_time }}</p>
+      {% endif %}
+    </div>
+    <div id="liveClockContainer"
+         class="text-white font-mono text-2xl px-4 py-2 rounded-lg border border-gray-500 bg-gray-800 shadow-lg mt-4 md:mt-0">
+      ⏰ <span id="liveClock">--:--:--</span>
+    </div>
+  </div>
+
+  <!-- Scanner Input -->
+  <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6 space-y-4">
+    <div class="flex items-center justify-between">
+      <h3 class="text-2xl font-semibold text-gray-100 mb-4">🔍 Scan Barcode</h3>
+      <span id="modeIndicator"
+            class="px-4 py-2 rounded-lg text-white font-bold bg-green-600 shadow">
+        Mode: Time In
+      </span>
+    </div>
+    <form id="attendanceForm" class="flex flex-col md:flex-row md:items-center gap-4">
+      <input type="text" id="barcodeInput" name="barcode"
+             placeholder="Scan or type barcode here..."
+             class="flex-1 px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+             autofocus required>
+      <div class="flex gap-2">
+        <button type="button" id="toggleModeBtn"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow">
+          Switch to Time Out
+        </button>
+      </div>
+    </form>
+    <p id="statusMessage" class="text-sm mt-2"></p>
+  </div>
+
+  <!-- Attendance Table -->
+  <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6 overflow-x-auto">
+    <h3 class="text-2xl font-semibold text-gray-100 mb-4">📝 Student Attendance</h3>
+    <table class="w-full border-collapse">
+      <thead>
+        <tr class="bg-gray-800 text-gray-300 text-left text-sm uppercase tracking-wider">
+          <th class="px-4 py-3">USN</th>
+          <th class="px-4 py-3">Name</th>
+          <th class="px-4 py-3">Date</th>
+          <th class="px-4 py-3">Time In</th>
+          <th class="px-4 py-3">Time Out</th>
+        </tr>
+      </thead>
+      <tbody id="attendanceTableBody">
+        {% if attendance %}
+        {% for record in attendance %}
+        <tr class="border-b border-gray-700 hover:bg-gray-800 transition {% if record.time_in == 'Late' %}bg-orange-600 bg-opacity-20{% endif %}" data-usn="{{ record.usn }}">
+          <td class="px-4 py-3 text-gray-300">{{ record.usn }}</td>
+          <td class="px-4 py-3 text-white">{{ record.name }}</td>
+          <td class="px-4 py-3 text-gray-300">{{ record.date }}</td>
+          <td class="px-4 py-3 text-gray-300">{{ record.time_in or "-" }}</td>
+          <td class="px-4 py-3 text-gray-300">{{ record.time_out or "-" }}</td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-gray-400 py-4">No attendance records yet.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+// ===== Live Clock =====
+function updateClock() {
+  const now = new Date();
+  document.getElementById("liveClock").textContent = now.toLocaleTimeString('en-US', { hour12: true });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ===== Mode Handling =====
+let isTimeIn = true;
+function updateModeUI() {
+  const indicator = document.getElementById("modeIndicator");
+  const toggleBtn = document.getElementById("toggleModeBtn");
+  if (isTimeIn) {
+    indicator.textContent = "Mode: Time In";
+    indicator.className = "px-4 py-2 rounded-lg text-white font-bold bg-green-600 shadow";
+    toggleBtn.textContent = "Switch to Time Out";
+  } else {
+    indicator.textContent = "Mode: Time Out";
+    indicator.className = "px-4 py-2 rounded-lg text-white font-bold bg-red-600 shadow";
+    toggleBtn.textContent = "Switch to Time In";
+  }
+}
+document.getElementById("toggleModeBtn").addEventListener("click", () => {
+  isTimeIn = !isTimeIn;
+  updateModeUI();
+});
+
+// ===== Socket.IO Setup =====
+const socket = io();
+const eventId = {{ event.id }};
+const cutoffTime = "{{ event.cutoff_time or '' }}";
+
+// ===== Utility: Check Cutoff =====
+function isAfterCutoff() {
+  if (!cutoffTime) return false;
+  const now = new Date();
+  const [hours, minutes] = cutoffTime.split(":").map(Number);
+  const cutoff = new Date(now);
+  cutoff.setHours(hours, minutes, 0, 0);
+  return now > cutoff;
+}
+
+// ===== Attendance Logic =====
+async function sendAttendance(barcode) {
+  const msgEl = document.getElementById("statusMessage");
+  const afterCutoff = isAfterCutoff();
+
+  // Only block Time In after cutoff
+  if (isTimeIn && afterCutoff) {
+    msgEl.textContent = "⚠ Attendance cutoff time reached. Cannot Time In.";
+    msgEl.className = "text-yellow-400";
+    return;
+  }
+
+  const action = isTimeIn ? "time_in" : "time_out";
+
+  try {
+    const res = await fetch("/scan_attendance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ barcode, action, event_id: eventId }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      if (afterCutoff && !isTimeIn) {
+        msgEl.textContent = `${barcode} recorded as Late (Time In) & timed OUT successfully.`;
+      } else {
+        msgEl.textContent = `${barcode} ${isTimeIn ? "timed IN" : "timed OUT"} successfully.`;
+      }
+      msgEl.className = isTimeIn ? "text-green-400" : "text-red-400";
+      updateAttendanceRow(data.record);
+    } else {
+      msgEl.textContent = data.error || "Error recording attendance.";
+      msgEl.className = "text-red-400";
+    }
+  } catch (err) {
+    console.error(err);
+    msgEl.textContent = "Connection error.";
+    msgEl.className = "text-red-400";
+  }
+}
+
+// ===== Update/Add Table Row =====
+function updateAttendanceRow(data) {
+  const tbody = document.getElementById("attendanceTableBody");
+  let row = tbody.querySelector(`tr[data-usn="${data.usn}"]`);
+
+  if (!row) {
+    row = document.createElement("tr");
+    row.className = "border-b border-gray-700 hover:bg-gray-800 transition";
+    row.dataset.usn = data.usn;
+    tbody.prepend(row);
+  }
+
+  // Highlight Late entries
+  const lateClass = (data.time_in === 'Late') ? 'bg-orange-600 bg-opacity-20' : '';
+
+  row.innerHTML = `
+    <td class="px-4 py-3 text-gray-300">${data.usn}</td>
+    <td class="px-4 py-3 text-white">${data.name}</td>
+    <td class="px-4 py-3 text-gray-300">${data.date}</td>
+    <td class="px-4 py-3 text-gray-300 ${lateClass}">${data.time_in || "-"}</td>
+    <td class="px-4 py-3 text-gray-300">${data.time_out || "-"}</td>
+  `;
+}
+
+// ===== Socket.IO real-time updates =====
+socket.on("attendance_update", (data) => {
+  if (data.event_id !== eventId) return;
+  updateAttendanceRow(data);
+});
+
+// ===== Form submit =====
+document.getElementById("attendanceForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const barcode = document.getElementById("barcodeInput").value.trim();
+  if (barcode) {
+    sendAttendance(barcode);
+    document.getElementById("barcodeInput").value = "";
+  }
+});
+
+// Initialize mode UI
+updateModeUI();
+</script>
+{% endblock %}

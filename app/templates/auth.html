@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+  <div class="bg-gray-900 shadow-2xl rounded-2xl w-full max-w-md p-8 space-y-6 border border-gray-700">
+    
+    <!-- Header -->
+    <div class="text-center">
+      <h1 class="text-3xl font-bold text-white mb-2">🔑 Login</h1>
+      <p class="text-gray-400 text-sm">Access the system as Admin or Officer</p>
+    </div>
+
+    <!-- Form -->
+    <form method="POST" action="#" class="space-y-5">
+      
+      <!-- Role Selection -->
+      <div>
+        <label class="block text-gray-300 text-sm mb-2">Login as</label>
+        <select name="role" class="w-full px-4 py-3 rounded-lg bg-gray-800 text-gray-200 border border-gray-700 focus:ring-2 focus:ring-green-500 focus:outline-none">
+          <option value="admin">Admin</option>
+          <option value="officer">Officer</option>
+        </select>
+      </div>
+
+      <!-- Username -->
+      <div>
+        <label class="block text-gray-300 text-sm mb-2">Username</label>
+        <input type="text" name="username" placeholder="Enter your username" 
+               class="w-full px-4 py-3 rounded-lg bg-gray-800 text-gray-200 border border-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:outline-none">
+      </div>
+
+      <!-- Password -->
+      <div>
+        <label class="block text-gray-300 text-sm mb-2">Password</label>
+        <input type="password" name="password" placeholder="••••••••" 
+               class="w-full px-4 py-3 rounded-lg bg-gray-800 text-gray-200 border border-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:outline-none">
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" 
+              class="w-full py-3 px-4 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg shadow-lg transition duration-200">
+        Login
+      </button>
+
+    </form>
+
+    <!-- Footer -->
+    <div class="text-center text-sm text-gray-400">
+      <p>Forgot your password? <a href="#" class="text-green-400 hover:underline">Reset here</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

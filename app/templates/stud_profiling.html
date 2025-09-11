@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Student Profile{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-8">
+
+  <!-- Page Title -->
+  <h2 class="text-3xl font-bold text-white tracking-wide mb-6">🎓 Student Profile</h2>
+
+  <!-- Top Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Avatar Card -->
+    <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6 flex flex-col items-center justify-center">
+      <div class="w-36 h-36 bg-gray-700 rounded-full flex items-center justify-center mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-20 h-20 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 
+            1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 
+            4v2h16v-2c0-2.66-5.33-4-8-4z" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-bold text-white">John Doe</h2>
+      <p class="text-green-400 font-medium">BS Computer Science</p>
+    </div>
+
+    <!-- Info Card -->
+    <div class="lg:col-span-2 bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6">
+      <h3 class="text-xl font-semibold text-white mb-4">Student Information</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-gray-300">
+        <div>
+          <p class="font-semibold text-gray-400">Name:</p>
+          <p>John Doe</p>
+        </div>
+        <div>
+          <p class="font-semibold text-gray-400">USN:</p>
+          <p>2025-12345</p>
+        </div>
+        <div>
+          <p class="font-semibold text-gray-400">Course:</p>
+          <p>BS Computer Science</p>
+        </div>
+        <div>
+          <p class="font-semibold text-gray-400">Gmail:</p>
+          <p>johndoe@gmail.com</p>
+        </div>
+        <div class="sm:col-span-2 lg:col-span-3">
+          <p class="font-semibold text-gray-400">Address:</p>
+          <p>123 University St., Sample City</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Stats & History -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Attendance Stats -->
+    <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6">
+      <h3 class="text-xl font-semibold text-white mb-4">📊 Attendance Overview</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-gray-800 rounded-xl p-4 text-center shadow">
+          <h4 class="text-lg font-medium text-green-400">Attended</h4>
+          <p class="text-3xl font-bold text-white mt-2">12</p>
+        </div>
+        <div class="bg-gray-800 rounded-xl p-4 text-center shadow">
+          <h4 class="text-lg font-medium text-red-400">Missed</h4>
+          <p class="text-3xl font-bold text-white mt-2">3</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Event History -->
+    <div class="lg:col-span-2 bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-2xl font-semibold text-gray-100">📅 Event History</h3>
+        <input type="text" placeholder="Search events..." class="bg-gray-800 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:ring focus:ring-blue-500">
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse">
+          <thead>
+            <tr class="bg-gray-800 text-gray-300 text-left text-sm uppercase tracking-wider">
+              <th class="px-4 py-3">Event</th>
+              <th class="px-4 py-3">Date</th>
+              <th class="px-4 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody id="eventTableBody">
+            <!-- Dynamic Rows -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex justify-between items-center mt-4 text-gray-300">
+        <button id="prevBtn" class="px-3 py-1 bg-gray-700 rounded disabled:opacity-50">Prev</button>
+        <span id="pageInfo">Page 1</span>
+        <button id="nextBtn" class="px-3 py-1 bg-gray-700 rounded disabled:opacity-50">Next</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const events = [
+    {name: "AMALYMPICS - Day 1", date: "2025-09-15", status: "Attended"},
+    {name: "AMALYMPICS - Day 2", date: "2025-09-16", status: "Missed"},
+    {name: "Seminar on AI", date: "2025-09-01", status: "Attended"},
+    {name: "Hackathon", date: "2025-08-20", status: "Attended"},
+    {name: "Workshop on ML", date: "2025-08-10", status: "Missed"},
+    {name: "Leadership Training", date: "2025-07-25", status: "Attended"},
+    {name: "Sports Fest", date: "2025-07-15", status: "Attended"},
+    {name: "Career Fair", date: "2025-07-01", status: "Missed"},
+    {name: "Web Dev Bootcamp", date: "2025-06-20", status: "Attended"},
+    {name: "Cultural Night", date: "2025-06-15", status: "Missed"},
+    {name: "Science Expo", date: "2025-06-01", status: "Attended"},
+    {name: "Student Assembly", date: "2025-05-20", status: "Attended"},
+    {name: "Research Forum", date: "2025-05-10", status: "Attended"},
+    {name: "Intramurals Opening", date: "2025-04-25", status: "Missed"},
+    {name: "Clean-up Drive", date: "2025-04-15", status: "Attended"},
+    {name: "Outreach Program", date: "2025-04-01", status: "Attended"},
+  ];
+
+  const rowsPerPage = 4;
+  let currentPage = 1;
+  let filteredEvents = [...events]; // copy for search filtering
+
+  function renderTable() {
+    const tbody = document.getElementById("eventTableBody");
+    tbody.innerHTML = "";
+
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const paginatedEvents = filteredEvents.slice(start, end);
+
+    paginatedEvents.forEach(event => {
+      const row = document.createElement("tr");
+      row.className = "border-b border-gray-700 hover:bg-gray-800 transition";
+
+      row.innerHTML = `
+        <td class="px-4 py-3 text-white">${event.name}</td>
+        <td class="px-4 py-3 text-gray-300">${event.date}</td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-1 ${event.status === "Attended" ? "bg-green-600" : "bg-red-600"} text-white text-xs rounded">
+            ${event.status}
+          </span>
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+
+    // Update pagination info
+    document.getElementById("pageInfo").textContent =
+      `Page ${currentPage} of ${Math.max(1, Math.ceil(filteredEvents.length / rowsPerPage))}`;
+
+    document.getElementById("prevBtn").disabled = currentPage === 1;
+    document.getElementById("nextBtn").disabled = end >= filteredEvents.length;
+  }
+
+  // Pagination controls
+  document.getElementById("prevBtn").addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderTable();
+    }
+  });
+
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    if ((currentPage * rowsPerPage) < filteredEvents.length) {
+      currentPage++;
+      renderTable();
+    }
+  });
+
+  // Search filter
+  document.querySelector("input[placeholder='Search events...']").addEventListener("input", (e) => {
+    const query = e.target.value.toLowerCase();
+    filteredEvents = events.filter(ev =>
+      ev.name.toLowerCase().includes(query) ||
+      ev.date.includes(query) ||
+      ev.status.toLowerCase().includes(query)
+    );
+    currentPage = 1; // reset to first page
+    renderTable();
+  });
+
+  // Initial render
+  renderTable();
+});
+</script>
+
+
+{% endblock %}

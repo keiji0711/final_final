@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Student List{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-8">
+
+  <!-- Page Title -->
+  <h2 class="text-3xl font-bold text-white tracking-wide mb-6">👩‍🎓 Student List</h2>
+
+  <!-- Search -->
+  <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+    <input type="text" id="searchInput" placeholder="Search students..."
+      class="w-full sm:w-1/3 bg-gray-800 text-white px-3 py-2 rounded-lg border border-gray-600 focus:outline-none focus:ring focus:ring-blue-500">
+  </div>
+
+  <!-- Student Table -->
+  <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6 overflow-x-auto">
+    <table class="w-full border-collapse">
+      <thead>
+        <tr class="bg-gray-800 text-gray-300 text-left text-sm uppercase tracking-wider">
+          <th class="px-4 py-3">USN</th>
+          <th class="px-4 py-3">Name</th>
+          <th class="px-4 py-3">Course</th>
+          <th class="px-4 py-3">Contact</th>
+        </tr>
+      </thead>
+      <tbody id="studentTableBody">
+        <!-- Dynamic Rows -->
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="flex justify-between items-center mt-4 text-gray-300">
+      <button id="prevBtn" class="px-3 py-1 bg-gray-700 rounded disabled:opacity-50">Prev</button>
+      <span id="pageInfo">Page 1</span>
+      <button id="nextBtn" class="px-3 py-1 bg-gray-700 rounded disabled:opacity-50">Next</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ✅ Students passed from Flask → convert into JS array
+const students = {{ students|tojson }};
+
+document.addEventListener("DOMContentLoaded", () => {
+  const rowsPerPage = 9;
+  let currentPage = 1;
+  let filteredStudents = [...students];
+
+  function renderTable() {
+    const tbody = document.getElementById("studentTableBody");
+    tbody.innerHTML = "";
+
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const paginated = filteredStudents.slice(start, end);
+
+    paginated.forEach(student => {
+      const row = document.createElement("tr");
+      row.className = "border-b border-gray-700 hover:bg-gray-800 transition cursor-pointer";
+      row.innerHTML = `
+        <td class="px-4 py-3 text-gray-300">${student.usn}</td>
+        <td class="px-4 py-3 text-white">${student.name}</td>
+        <td class="px-4 py-3 text-gray-300">${student.course}</td>
+        <td class="px-4 py-3 text-gray-400">${student.contact}</td>
+      `;
+      // Go to student profile page with USN
+      row.addEventListener("click", () => {
+        window.location.href = `/stud_profiling?usn=${student.usn}`;
+      });
+      tbody.appendChild(row);
+    });
+
+    document.getElementById("pageInfo").textContent =
+      `Page ${currentPage} of ${Math.max(1, Math.ceil(filteredStudents.length / rowsPerPage))}`;
+
+    document.getElementById("prevBtn").disabled = currentPage === 1;
+    document.getElementById("nextBtn").disabled = end >= filteredStudents.length;
+  }
+
+  // Pagination buttons
+  document.getElementById("prevBtn").addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderTable();
+    }
+  });
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    if ((currentPage * rowsPerPage) < filteredStudents.length) {
+      currentPage++;
+      renderTable();
+    }
+  });
+
+  // Search filter
+  document.getElementById("searchInput").addEventListener("input", (e) => {
+    const query = e.target.value.toLowerCase();
+    filteredStudents = students.filter(s =>
+      s.name.toLowerCase().includes(query) ||
+      s.course.toLowerCase().includes(query) ||
+      s.usn.toString().includes(query) ||
+      s.contact.toLowerCase().includes(query)
+    );
+    currentPage = 1;
+    renderTable();
+  });
+
+  renderTable();
+});
+</script>
+{% endblock %}
