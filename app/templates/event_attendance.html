@@ -2,10 +2,10 @@
 {% block title %}Event Attendance{% endblock %}
 
 {% block content %}
-<div class="p-6 space-y-8">
+<div class="p-6 flex flex-col gap-6 h-screen">
 
-  <!-- Event Header + Live Clock -->
-  <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
+  <!-- Event Header + Live Clock + Export Button -->
+  <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
     <div>
       <h2 class="text-3xl font-bold text-white tracking-wide">📅 {{ event.event_name }} - Attendance</h2>
       <p class="text-gray-300 mt-1">Date: {{ event.event_date }} | Semester: {{ event.semester }}</p>
@@ -13,70 +13,80 @@
       <p class="text-gray-400 mt-1">⏱ Attendance Cutoff Time: {{ event.cutoff_time }}</p>
       {% endif %}
     </div>
-    <div id="liveClockContainer"
-         class="text-white font-mono text-2xl px-4 py-2 rounded-lg border border-gray-500 bg-gray-800 shadow-lg mt-4 md:mt-0">
-      ⏰ <span id="liveClock">--:--:--</span>
+    <div class="flex gap-4 items-center">
+      <div id="liveClockContainer"
+           class="text-white font-mono text-2xl px-4 py-2 rounded-lg border border-gray-500 bg-gray-800 shadow-lg">
+        ⏰ <span id="liveClock">--:--:--</span>
+      </div>
+      <!-- Export Button -->
+     <a href="{{ url_for('event.export_excel', event_id=event.id) }}"
+   class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow">
+   Export to Excel
+</a>
+
     </div>
   </div>
 
-  <!-- Scanner Input -->
-  <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6 space-y-4">
-    <div class="flex items-center justify-between">
-      <h3 class="text-2xl font-semibold text-gray-100 mb-4">🔍 Scan Barcode</h3>
+  <div class="flex flex-col lg:flex-row gap-6 flex-1 overflow-hidden">
+
+    <!-- Student Attendance Table (LEFT) -->
+    <div class="lg:flex-[0.7] bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6 flex flex-col overflow-hidden">
+      <h3 class="text-2xl font-semibold text-gray-100 mb-4">📝 Student Attendance</h3>
+      <div class="flex-1 overflow-y-auto max-h-[75vh]">
+        <table class="min-w-full border-collapse text-sm">
+          <thead class="bg-gray-800 text-gray-300 uppercase tracking-wider sticky top-0 z-10">
+            <tr>
+              <th class="px-6 py-3 text-left">USN</th>
+              <th class="px-6 py-3 text-left">Name</th>
+              <th class="px-6 py-3 text-left">Date</th>
+              <th class="px-6 py-3 text-left">Time In</th>
+              <th class="px-6 py-3 text-left">Time Out</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceTableBody">
+            {% if attendance %}
+            {% for record in attendance %}
+            <tr class="border-b border-gray-700 hover:bg-gray-800 transition {% if record.time_in == 'Late' %}bg-orange-600 bg-opacity-20{% endif %}" data-usn="{{ record.usn }}">
+              <td class="px-6 py-3 text-gray-300">{{ record.usn }}</td>
+              <td class="px-6 py-3 text-white">{{ record.name }}</td>
+              <td class="px-6 py-3 text-gray-300">{{ record.date }}</td>
+              <td class="px-6 py-3 text-gray-300">{{ record.time_in or "-" }}</td>
+              <td class="px-6 py-3 text-gray-300">{{ record.time_out or "-" }}</td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+              <td colspan="5" class="text-center text-gray-400 py-4">No attendance records yet.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Barcode Scan Area (RIGHT) -->
+    <div class="lg:flex-[0.3] bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6 flex flex-col gap-4 max-h-[40vh]">
+      <h3 class="text-2xl font-semibold text-gray-100 mb-2">🔍 Scan Barcode</h3>
       <span id="modeIndicator"
-            class="px-4 py-2 rounded-lg text-white font-bold bg-green-600 shadow">
+            class="px-4 py-2 rounded-lg text-white font-bold bg-green-600 shadow mb-2">
         Mode: Time In
       </span>
-    </div>
-    <form id="attendanceForm" class="flex flex-col md:flex-row md:items-center gap-4">
-      <input type="text" id="barcodeInput" name="barcode"
-             placeholder="Scan or type barcode here..."
-             class="flex-1 px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-             autofocus required>
-      <div class="flex gap-2">
+      <form id="attendanceForm" class="flex flex-col gap-2">
+        <input type="text" id="barcodeInput" name="barcode"
+               placeholder="Scan or type barcode here..."
+               class="flex-1 px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+               autofocus required>
         <button type="button" id="toggleModeBtn"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow">
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow">
           Switch to Time Out
         </button>
-      </div>
-    </form>
-    <p id="statusMessage" class="text-sm mt-2"></p>
-  </div>
+      </form>
+      <p id="statusMessage" class="text-sm mt-2"></p>
+    </div>
 
-  <!-- Attendance Table -->
-  <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6 overflow-x-auto">
-    <h3 class="text-2xl font-semibold text-gray-100 mb-4">📝 Student Attendance</h3>
-    <table class="w-full border-collapse">
-      <thead>
-        <tr class="bg-gray-800 text-gray-300 text-left text-sm uppercase tracking-wider">
-          <th class="px-4 py-3">USN</th>
-          <th class="px-4 py-3">Name</th>
-          <th class="px-4 py-3">Date</th>
-          <th class="px-4 py-3">Time In</th>
-          <th class="px-4 py-3">Time Out</th>
-        </tr>
-      </thead>
-      <tbody id="attendanceTableBody">
-        {% if attendance %}
-        {% for record in attendance %}
-        <tr class="border-b border-gray-700 hover:bg-gray-800 transition {% if record.time_in == 'Late' %}bg-orange-600 bg-opacity-20{% endif %}" data-usn="{{ record.usn }}">
-          <td class="px-4 py-3 text-gray-300">{{ record.usn }}</td>
-          <td class="px-4 py-3 text-white">{{ record.name }}</td>
-          <td class="px-4 py-3 text-gray-300">{{ record.date }}</td>
-          <td class="px-4 py-3 text-gray-300">{{ record.time_in or "-" }}</td>
-          <td class="px-4 py-3 text-gray-300">{{ record.time_out or "-" }}</td>
-        </tr>
-        {% endfor %}
-        {% else %}
-        <tr>
-          <td colspan="5" class="text-center text-gray-400 py-4">No attendance records yet.</td>
-        </tr>
-        {% endif %}
-      </tbody>
-    </table>
   </div>
-
 </div>
+
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
@@ -95,11 +105,11 @@ function updateModeUI() {
   const toggleBtn = document.getElementById("toggleModeBtn");
   if (isTimeIn) {
     indicator.textContent = "Mode: Time In";
-    indicator.className = "px-4 py-2 rounded-lg text-white font-bold bg-green-600 shadow";
+    indicator.className = "px-4 py-2 rounded-lg text-white font-bold bg-green-600 shadow mb-2";
     toggleBtn.textContent = "Switch to Time Out";
   } else {
     indicator.textContent = "Mode: Time Out";
-    indicator.className = "px-4 py-2 rounded-lg text-white font-bold bg-red-600 shadow";
+    indicator.className = "px-4 py-2 rounded-lg text-white font-bold bg-red-600 shadow mb-2";
     toggleBtn.textContent = "Switch to Time In";
   }
 }
@@ -128,7 +138,6 @@ async function sendAttendance(barcode) {
   const msgEl = document.getElementById("statusMessage");
   const afterCutoff = isAfterCutoff();
 
-  // Only block Time In after cutoff
   if (isTimeIn && afterCutoff) {
     msgEl.textContent = "⚠ Attendance cutoff time reached. Cannot Time In.";
     msgEl.className = "text-yellow-400";
@@ -147,11 +156,7 @@ async function sendAttendance(barcode) {
     const data = await res.json();
 
     if (res.ok) {
-      if (afterCutoff && !isTimeIn) {
-        msgEl.textContent = `${barcode} recorded as Late (Time In) & timed OUT successfully.`;
-      } else {
-        msgEl.textContent = `${barcode} ${isTimeIn ? "timed IN" : "timed OUT"} successfully.`;
-      }
+      msgEl.textContent = `${barcode} ${isTimeIn ? "timed IN" : "timed OUT"} successfully.`;
       msgEl.className = isTimeIn ? "text-green-400" : "text-red-400";
       updateAttendanceRow(data.record);
     } else {
@@ -177,15 +182,14 @@ function updateAttendanceRow(data) {
     tbody.prepend(row);
   }
 
-  // Highlight Late entries
   const lateClass = (data.time_in === 'Late') ? 'bg-orange-600 bg-opacity-20' : '';
 
   row.innerHTML = `
-    <td class="px-4 py-3 text-gray-300">${data.usn}</td>
-    <td class="px-4 py-3 text-white">${data.name}</td>
-    <td class="px-4 py-3 text-gray-300">${data.date}</td>
-    <td class="px-4 py-3 text-gray-300 ${lateClass}">${data.time_in || "-"}</td>
-    <td class="px-4 py-3 text-gray-300">${data.time_out || "-"}</td>
+    <td class="px-6 py-3 text-gray-300">${data.usn}</td>
+    <td class="px-6 py-3 text-white">${data.name}</td>
+    <td class="px-6 py-3 text-gray-300">${data.date}</td>
+    <td class="px-6 py-3 text-gray-300 ${lateClass}">${data.time_in || "-"}</td>
+    <td class="px-6 py-3 text-gray-300">${data.time_out || "-"}</td>
   `;
 }
 

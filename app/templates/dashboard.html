@@ -2,103 +2,108 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="flex flex-col h-full p-6 gap-6">
+<div class="flex flex-col h-full p-6 gap-8">
 
-  <!-- Page Title -->
-  <h2 class="text-3xl font-bold text-white tracking-wide">📊 Dashboard</h2>
+  <h2 class="text-4xl font-bold text-white tracking-wide text-center">📊 Attendance Dashboard</h2>
 
   <!-- Stat Cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    <div class="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 text-center">
+    <div class="bg-gray-900 p-6 rounded-2xl shadow-xl border border-gray-700">
       <h3 class="text-gray-400 text-sm uppercase">Total Students</h3>
-      <p class="text-3xl font-bold text-white mt-2">120</p>
+      <p class="text-4xl font-bold text-white mt-2">{{ total_students }}</p>
     </div>
-    <div class="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700">
+    <div class="bg-gray-900 p-6 rounded-2xl shadow-xl border border-gray-700">
       <h3 class="text-gray-400 text-sm uppercase">Total Events</h3>
-      <p class="text-3xl font-bold text-white mt-2">8</p>
+      <p class="text-4xl font-bold text-white mt-2">{{ total_events }}</p>
     </div>
-    <div class="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700">
-      <h3 class="text-gray-400 text-sm uppercase">Total Attendances</h3>
-      <p class="text-3xl font-bold text-white mt-2">42</p>
+    <div class="bg-gray-900 p-6 rounded-2xl shadow-xl border border-gray-700">
+      <h3 class="text-gray-400 text-sm uppercase">ON-Time (All Events)</h3>
+      <p class="text-4xl font-bold text-green-400 mt-2">{{ total_present }}</p>
+      <p class="text-sm text-gray-400 mt-1">Rate: {{ attendance_rate }}</p>
     </div>
-    <div class="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700">
-      <h3 class="text-gray-400 text-sm uppercase">Attendance Rate</h3>
-      <p class="text-3xl font-bold text-green-400 mt-2">87%</p>
+    <div class="bg-gray-900 p-6 rounded-2xl shadow-xl border border-gray-700">
+      <h3 class="text-gray-400 text-sm uppercase">Late</h3>
+      <p class="text-4xl font-bold text-yellow-400 mt-2">{{ total_late }}</p>
+      <p class="text-sm text-gray-400 mt-1">({{ late_percentage }})</p>
+    </div>
+    <div class="bg-gray-900 p-6 rounded-2xl shadow-xl border border-gray-700">
+      <h3 class="text-gray-400 text-sm uppercase">Absent</h3>
+      <p class="text-4xl font-bold text-red-400 mt-2">{{ total_absent }}</p>
+      <p class="text-sm text-gray-400 mt-1">({{ absent_percentage }})</p>
     </div>
   </div>
 
-  <!-- Main Content -->
-  <div class="flex flex-1 gap-6 overflow-hidden">
+  <div class="flex flex-col lg:flex-row gap-8 mt-6">
 
-    <!-- Upcoming Events -->
-    <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-lg flex flex-col p-6 flex-1">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-2xl font-semibold text-gray-100">Upcoming Events</h3>
-        <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg shadow text-white font-medium">
-          + Create Event
-        </button>
-      </div>
-
-      <!-- Internal table scroll if needed -->
-      <div class="flex-1 overflow-y-auto">
-        <table class="w-full border-collapse">
-          <thead>
-            <tr class="bg-gray-800 text-gray-300 text-left text-sm uppercase tracking-wider">
-              <th class="px-4 py-3">Event</th>
-              <th class="px-4 py-3">Date</th>
-              <th class="px-4 py-3 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="border-b border-gray-700 hover:bg-gray-800 transition">
-              <td class="px-4 py-3 font-medium text-white">Python Workshop</td>
-              <td class="px-4 py-3 text-gray-300">2025-09-12</td>
-              <td class="px-4 py-3 text-center">
-                <button class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">View</button>
-                <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">Delete</button>
-              </td>
-            </tr>
-            <tr class="border-b border-gray-700 hover:bg-gray-800 transition">
-              <td class="px-4 py-3 font-medium text-white">AI Seminar</td>
-              <td class="px-4 py-3 text-gray-300">2025-09-15</td>
-              <td class="px-4 py-3 text-center">
-                <button class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">View</button>
-                <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">Delete</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Recent Events -->
+    <div class="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl flex flex-col p-6 flex-1">
+      <h3 class="text-2xl font-semibold text-gray-100 mb-4">Recent Events</h3>
+      <div class="grid grid-cols-1 gap-4">
+        {% for event in events[:5] %}
+        <div class="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition flex justify-between items-center">
+          <div>
+            <p class="text-white font-medium text-lg">{{ event.event_name }}</p>
+            <p class="text-gray-300 text-sm">{{ event.event_date }}</p>
+          </div>
+        </div>
+        {% endfor %}
       </div>
     </div>
 
-    <!-- Statistics & Calendar -->
-    <div class="flex flex-col flex-1 gap-6">
-
-      <!-- Attendance Statistics -->
-      <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6 flex-1 flex items-center justify-center text-gray-400">
-        <span class="text-2xl">📈 Attendance Chart Placeholder</span>
-      </div>
-
-      <!-- Calendar -->
-      <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6 flex-1 flex items-center justify-center text-gray-400">
-        <span class="text-2xl">📅 Calendar Placeholder</span>
-      </div>
-
+    <!-- Attendance Chart -->
+    <div class="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-6 flex-1">
+      <h3 class="text-2xl font-semibold text-gray-100 mb-4 text-center">Overall Attendance Breakdown (%)</h3>
+      <canvas id="attendanceChart" class="w-full h-72"></canvas>
     </div>
   </div>
 </div>
 
-<style>
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden; /* remove main scrollbar */
-}
-div.h-screen {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('attendanceChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ["On-Time", "Late", "Absent"],
+        datasets: [{
+            label: "Percentage",
+            data: [
+              parseFloat("{{ attendance_rate|replace('%','') }}"),
+              parseFloat("{{ late_percentage|replace('%','') }}"),
+              parseFloat("{{ absent_percentage|replace('%','') }}")
+            ],
+            backgroundColor: [
+              'rgba(34,197,94,0.7)',   // Green
+              'rgba(234,179,8,0.7)',   // Yellow
+              'rgba(220,38,38,0.7)'    // Red
+            ],
+            borderColor: [
+              'rgba(34,197,94,1)',
+              'rgba(234,179,8,1)',
+              'rgba(220,38,38,1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { 
+            callbacks: {
+              label: (context) => context.raw + "%"
+            }
+          }
+        },
+        scales: { 
+          y: { 
+            beginAtZero: true, 
+            max: 100,
+            ticks: { color: 'white', callback: val => val + "%" } 
+          },
+          x: { ticks: { color: 'white' } }
+        }
+    }
+});
+</script>
 {% endblock %}

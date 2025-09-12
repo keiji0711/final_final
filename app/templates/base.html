@@ -11,10 +11,24 @@
   <!-- Navbar -->
   <nav class="bg-gray-800 px-6 py-3 flex justify-between items-center shadow">
     <h1 class="text-2xl font-bold">🎓 Attendance System</h1>
-    <div class="space-x-6">
+    <div class="flex items-center space-x-6">
+
       <a href="{{ url_for('dashboard.dashboard') }}" class="hover:text-green-400">Dashboard</a>
-      <a href="{{ url_for('stud_profiling.stud_list') }}" class="hover:text-green-400">Students</a>
       <a href="{{ url_for('event.event') }}" class="hover:text-green-400">Events</a>
+
+      {% if session.get('user_type') != 'officer' %}
+        <a href="{{ url_for('stud_profiling.stud_list') }}" class="hover:text-green-400">Students</a>
+        <a href="{{ url_for('auth.create_account') }}" class="hover:text-green-400">User Account</a>
+      {% else %}
+        <!-- optional: show disabled placeholders for layout consistency -->
+        <span class="text-gray-500 cursor-not-allowed">Students</span>
+        <span class="text-gray-500 cursor-not-allowed">User Account</span>
+      {% endif %}
+
+      {% if session.get('user_id') %}
+        <a href="{{ url_for('auth.logout') }}" class="hover:text-red-400">Logout</a>
+      {% endif %}
+
     </div>
   </nav>
 

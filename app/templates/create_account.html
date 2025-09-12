@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Create Account{% endblock %}
+
+{% block content %}
+<div class="flex flex-col h-full p-6 gap-8">
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div id="flash-container" class="flex flex-col items-center space-y-2">
+        {% for category, message in messages %}
+          <div class="relative px-6 py-3 rounded-lg shadow-lg w-96 text-center text-white 
+                      animate-fade-in
+                      {% if category == 'success' %} bg-green-600 
+                      {% elif category == 'danger' %} bg-red-600 
+                      {% elif category == 'info' %} bg-blue-600 
+                      {% elif category == 'warning' %} bg-yellow-600 text-black {% endif %}">
+            <span class="font-semibold">{{ message }}</span>
+            <button onclick="this.parentElement.remove()" 
+                    class="absolute top-1 right-3 hover:text-gray-200 font-bold">
+              ✖
+            </button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <h2 class="text-3xl font-bold text-white text-center">👤 User Management</h2>
+
+  <!-- Button to Open Create Modal -->
+  <div class="text-center">
+    <button onclick="openModal('accountModal')" 
+      class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+      ➕ Create Account
+    </button>
+  </div>
+
+  <!-- Accounts Table -->
+  <div class="overflow-x-auto mt-6">
+    <table class="w-full text-sm text-left border border-gray-700 rounded-lg overflow-hidden">
+      <thead class="bg-gray-700 text-white">
+        <tr>
+          <th class="px-4 py-2">ID</th>
+          <th class="px-4 py-2">Username</th>
+          <th class="px-4 py-2">Type</th>
+          <th class="px-4 py-2 text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-gray-800 text-gray-200">
+        {% for user in users %}
+        <tr class="border-b border-gray-700 hover:bg-gray-700">
+          <td class="px-4 py-2">{{ user.id }}</td>
+          <td class="px-4 py-2">{{ user.username }}</td>
+          <td class="px-4 py-2">{{ user.user_type }}</td>
+          <td class="px-4 py-2 flex gap-2 justify-center">
+            <!-- Open Edit Modal -->
+            <button onclick="openModal('editModal{{ user.id }}')" 
+              class="bg-blue-500 hover:bg-blue-400 text-white px-3 py-1 rounded">✏️</button>
+            <!-- Delete -->
+            <form action="{{ url_for('auth.delete_account', user_id=user.id) }}" method="POST" class="inline">
+              <button type="submit" class="bg-red-500 hover:bg-red-400 text-white px-3 py-1 rounded">🗑️</button>
+            </form>
+          </td>
+        </tr>
+
+        <!-- Edit Modal -->
+        <div id="editModal{{ user.id }}" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50">
+          <div class="bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6 relative">
+            
+            <!-- Close Button -->
+            <button onclick="closeModal('editModal{{ user.id }}')" class="absolute top-3 right-3 text-gray-400 hover:text-white">
+              ✖
+            </button>
+
+            <h3 class="text-xl font-semibold mb-4 text-white">Edit Account</h3>
+
+            <form action="{{ url_for('auth.update_account', user_id=user.id) }}" method="POST" class="space-y-4">
+              
+              <!-- Username -->
+              <div>
+                <label for="username{{ user.id }}" class="block text-sm font-medium">Username</label>
+                <input type="text" id="username{{ user.id }}" name="username" value="{{ user.username }}" required
+                  class="w-full mt-1 p-2 rounded bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-500">
+              </div>
+
+              <!-- User Type -->
+              <div>
+                <label for="user_type{{ user.id }}" class="block text-sm font-medium">User Type</label>
+                <select id="user_type{{ user.id }}" name="user_type" required
+                  class="w-full mt-1 p-2 rounded bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-500">
+                  <option value="admin" {% if user.user_type=='admin' %}selected{% endif %}>Admin</option>
+                  <option value="officer" {% if user.user_type=='officer' %}selected{% endif %}>Officer</option>
+                </select>
+              </div>
+
+              <!-- Submit Buttons -->
+              <div class="flex justify-end gap-3 pt-4">
+                <button type="button" onclick="closeModal('editModal{{ user.id }}')" 
+                  class="px-5 py-2 bg-gray-500 hover:bg-gray-400 text-white rounded-lg transition">Cancel</button>
+                <button type="submit" 
+                  class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition">
+                  💾 Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+        {% else %}
+        <tr>
+          <td colspan="4" class="text-center text-gray-400 py-4">No accounts yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Create Modal -->
+  <div id="accountModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50">
+    <div class="bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6 relative">
+
+      <!-- Close Button -->
+      <button onclick="closeModal('accountModal')" class="absolute top-3 right-3 text-gray-400 hover:text-white">
+        ✖
+      </button>
+
+      <h3 class="text-xl font-semibold mb-4 text-white">Create New Account</h3>
+
+      <form action="{{ url_for('auth.create_account') }}" method="POST" class="space-y-4">
+        
+        <!-- Username -->
+        <div>
+          <label for="username" class="block text-sm font-medium">Username</label>
+          <input type="text" id="username" name="username" required
+            class="w-full mt-1 p-2 rounded bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-green-500">
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label for="password" class="block text-sm font-medium">Password</label>
+          <input type="password" id="password" name="password" required
+            class="w-full mt-1 p-2 rounded bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-green-500">
+        </div>
+
+        <!-- Confirm Password -->
+        <div>
+          <label for="confirm_password" class="block text-sm font-medium">Confirm Password</label>
+          <input type="password" id="confirm_password" name="confirm_password" required
+            class="w-full mt-1 p-2 rounded bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-green-500">
+        </div>
+
+        <!-- User Type -->
+        <div>
+          <label for="user_type" class="block text-sm font-medium">User Type</label>
+          <select id="user_type" name="user_type" required
+            class="w-full mt-1 p-2 rounded bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-green-500">
+            <option value="admin">Admin</option>
+            <option value="officer">Officer</option>
+          </select>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="flex justify-end gap-3 pt-4">
+          <button type="button" onclick="closeModal('accountModal')" 
+            class="px-5 py-2 bg-gray-500 hover:bg-gray-400 text-white rounded-lg transition">Cancel</button>
+          <button type="submit" 
+            class="px-5 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition">
+            ✅ Create Account
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Script -->
+<script>
+  function openModal(id) {
+    document.getElementById(id).classList.remove("hidden");
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.add("hidden");
+  }
+</script>
+
+<!-- Flash Animation -->
+<style>
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+</style>
+{% endblock %}

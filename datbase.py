@@ -47,6 +47,21 @@ CREATE TABLE IF NOT EXISTS event_attendance (
 )
 """)
 
+
+# ==================================================
+# User accounts table
+# ==================================================
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS user_accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    user_type TEXT NOT NULL CHECK(user_type IN ('admin', 'officer')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+
 # Commit structure
 conn.commit()
 print("✅ Database and tables created successfully.")

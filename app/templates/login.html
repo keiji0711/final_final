@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Attendance System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fade-in 0.3s ease-out;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white font-sans min-h-screen flex items-center justify-center">
+
+  <div class="bg-gray-900 shadow-2xl rounded-2xl w-full max-w-md p-8 space-y-6 border border-gray-700">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div id="flash-container" class="flex flex-col space-y-3">
+          {% for category, message in messages %}
+            <div class="relative px-6 py-4 rounded-lg shadow-lg w-full text-center text-white animate-fade-in
+                        {% if category == 'success' %} bg-green-600
+                        {% elif category == 'danger' %} bg-red-600
+                        {% elif category == 'warning' %} bg-yellow-500 text-black
+                        {% elif category == 'info' %} bg-blue-600 {% endif %}">
+              <span class="font-semibold">{{ message }}</span>
+              <button onclick="this.parentElement.remove()" 
+                      class="absolute top-2 right-3 hover:text-gray-200 font-bold">
+                ✖
+              </button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Header -->
+    <div class="text-center">
+      <h1 class="text-3xl font-bold text-white mb-2">🔑 Login</h1>
+      <p class="text-gray-400 text-sm">Access the system as Admin or Officer</p>
+    </div>
+
+    <!-- Form -->
+    <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-5">
+
+      <!-- Role Selection -->
+      <div>
+        <label class="block text-gray-300 text-sm mb-2">Login as</label>
+        <select name="user_type" required
+                class="w-full px-4 py-3 rounded-lg bg-gray-800 text-gray-200 border border-gray-700 focus:ring-2 focus:ring-green-500 focus:outline-none">
+          <option value="admin">Admin</option>
+          <option value="officer">Officer</option>
+        </select>
+      </div>
+
+      <!-- Username -->
+      <div>
+        <label class="block text-gray-300 text-sm mb-2">Username</label>
+        <input type="text" name="username" placeholder="Enter your username" required
+               class="w-full px-4 py-3 rounded-lg bg-gray-800 text-gray-200 border border-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:outline-none">
+      </div>
+
+      <!-- Password -->
+      <div>
+        <label class="block text-gray-300 text-sm mb-2">Password</label>
+        <input type="password" name="password" placeholder="••••••••" required
+               class="w-full px-4 py-3 rounded-lg bg-gray-800 text-gray-200 border border-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:outline-none">
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" 
+              class="w-full py-3 px-4 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg shadow-lg transition duration-200">
+        ✅ Login
+      </button>
+    </form>
+
+  </div>
+
+</body>
+</html>
