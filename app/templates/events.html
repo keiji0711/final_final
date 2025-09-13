@@ -7,16 +7,10 @@
   <!-- Page Title + Create Button -->
   <div class="flex items-center justify-between">
     <h2 class="text-3xl font-bold text-white tracking-wide">📅 Events Management</h2>
-    {% if session.get('user_type') != 'officer' %}
-      <button onclick="openModal()"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow transition">
-        + Create Event
-      </button>
-    {% else %}
-      <button class="bg-blue-800 text-gray-400 px-4 py-2 rounded-lg shadow cursor-not-allowed" disabled>
-        + Create Event
-      </button>
-    {% endif %}
+    <button onclick="openModal()"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow transition">
+      + Create Event
+    </button>
   </div>
 
   <!-- Flash Notification -->
@@ -40,7 +34,7 @@
   <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6">
     <h3 class="text-2xl font-semibold text-gray-100 mb-4">Event List</h3>
     <div class="overflow-x-auto">
-      <table class="w-full border-collapse">
+      <table id="eventTable" class="w-full border-collapse">
         <thead>
           <tr class="bg-gray-800 text-gray-300 text-left text-sm uppercase tracking-wider">
             <th class="px-4 py-3">Event</th>
@@ -50,54 +44,42 @@
             <th class="px-4 py-3 text-center">Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="eventTableBody">
           {% for event in events %}
-          <tr class="border-b border-gray-700 hover:bg-gray-800 transition">
+          <tr id="event-row-{{ event.id }}" class="border-b border-gray-700 hover:bg-gray-800 transition">
             <td class="px-4 py-3 font-medium text-white">{{ event.event_name }}</td>
             <td class="px-4 py-3 text-gray-300">{{ event.event_date }}</td>
             <td class="px-4 py-3 text-gray-300">{{ event.semester }}</td>
             <td class="px-4 py-3 text-gray-300">
-              {% if event.cutoff_time %}
-                {% set hour, minute = event.cutoff_time.split(':') %}
-                {{ "%d:%02d %s"|format((hour|int % 12) or 12, minute|int, "AM" if hour|int < 12 else "PM") }}
-              {% else %}
-                -
-              {% endif %}
-            </td>
+  {% if event.cutoff_time %}
+    {% set hour, minute = event.cutoff_time.split(':') %}
+    {{ "%d:%02d %s"|format((hour|int % 12) or 12, minute|int, "AM" if hour|int < 12 else "PM") }}
+  {% else %}
+    -
+  {% endif %}
+</td>
             <td class="px-4 py-3 text-center space-x-2">
 
-              <!-- View Attendance (always clickable) -->
-              <a href="{{ url_for('event.view_attendance', event_id=event.id) }}"
-                 class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm shadow">
-                 View
-              </a>
+              <!-- View Attendance -->
+             <a href="{{ url_for('event.view_attendance', event_id=event.id) }}"
+   class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm shadow">
+   View
+</a>
 
               <!-- Edit Event -->
-              {% if session.get('user_type') != 'officer' %}
-                <button onclick='openUpdateModal({{ event | tojson }})'
-                        class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm shadow">
-                  Edit
-                </button>
-              {% else %}
-                <button class="bg-yellow-800 text-gray-400 px-3 py-1 rounded text-sm shadow cursor-not-allowed" disabled>
-                  Edit
-                </button>
-              {% endif %}
+              <button onclick='openUpdateModal({{ event | tojson }})'
+                      class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm shadow">
+                Edit
+              </button>
 
               <!-- Delete Event -->
-              {% if session.get('user_type') != 'officer' %}
-                <form action="{{ url_for('event.delete_event', event_id=event.id) }}" method="POST" class="inline">
-                  <button type="submit"
-                          class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm shadow"
-                          onclick="return confirm('Are you sure you want to delete this event?')">
-                    Delete
-                  </button>
-                </form>
-              {% else %}
-                <button class="bg-red-800 text-gray-400 px-3 py-1 rounded text-sm shadow cursor-not-allowed" disabled>
+              <form action="{{ url_for('event.delete_event', event_id=event.id) }}" method="POST" class="inline">
+                <button type="submit"
+                        class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm shadow"
+                        onclick="return confirm('Are you sure you want to delete this event?')">
                   Delete
                 </button>
-              {% endif %}
+              </form>
 
             </td>
           </tr>
@@ -186,22 +168,17 @@
       <div class="flex justify-end space-x-2 pt-4">
         <button type="button" onclick="closeUpdateModal()"
                 class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">Cancel</button>
-        {% if session.get('user_type') != 'officer' %}
-          <button type="submit"
-                  class="bg-yellow-600 hover:bg-yellow-700 text-white font-medium px-6 py-2 rounded-lg shadow">
-            Update Event
-          </button>
-        {% else %}
-          <button class="bg-yellow-800 text-gray-400 px-6 py-2 rounded-lg shadow cursor-not-allowed" disabled>
-            Update Event
-          </button>
-        {% endif %}
+        <button type="submit"
+                class="bg-yellow-600 hover:bg-yellow-700 text-white font-medium px-6 py-2 rounded-lg shadow">
+          Update Event
+        </button>
       </div>
     </form>
     <button onclick="closeUpdateModal()" class="absolute top-3 right-3 text-gray-400 hover:text-white text-xl font-bold">&times;</button>
   </div>
 </div>
 
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
 function openModal() { document.getElementById("eventModal").classList.remove("hidden"); }
 function closeModal() { document.getElementById("eventModal").classList.add("hidden"); }
@@ -215,5 +192,62 @@ function openUpdateModal(event) {
   document.getElementById("updateEventForm").action = `/update_event/${event.id}`;
 }
 function closeUpdateModal() { document.getElementById("updateEventModal").classList.add("hidden"); }
+
+// --- Socket.IO Real-time CRUD ---
+const socket = io();
+
+function formatCutoffTime(cutoff_time) {
+  if (!cutoff_time) return '-';
+  const [hour, minute] = cutoff_time.split(":");
+  let h = parseInt(hour);
+  const m = parseInt(minute);
+  const ampm = h < 12 ? "AM" : "PM";
+  h = h % 12 || 12;
+  return `${h}:${m.toString().padStart(2, '0')} ${ampm}`;
+}
+
+function eventRowHtml(event) {
+  return `<tr id="event-row-${event.id}" class="border-b border-gray-700 hover:bg-gray-800 transition">
+    <td class="px-4 py-3 font-medium text-white">${event.event_name}</td>
+    <td class="px-4 py-3 text-gray-300">${event.event_date}</td>
+    <td class="px-4 py-3 text-gray-300">${event.semester}</td>
+    <td class="px-4 py-3 text-gray-300">${formatCutoffTime(event.cutoff_time)}</td>
+    <td class="px-4 py-3 text-center space-x-2">
+      <a href="/attendance/${event.id}"
+         class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm shadow">
+         View
+      </a>
+      <button onclick='openUpdateModal(${JSON.stringify(event)})'
+              class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm shadow">
+        Edit
+      </button>
+      <form action="/delete_event/${event.id}" method="POST" class="inline">
+        <button type="submit"
+                class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm shadow"
+                onclick="return confirm('Are you sure you want to delete this event?')">
+          Delete
+        </button>
+      </form>
+    </td>
+  </tr>`;
+}
+
+socket.on("event_added", function(event) {
+  if (document.getElementById(`event-row-${event.id}`)) return; // Prevent duplicate
+  const tbody = document.getElementById("eventTableBody");
+  tbody.insertAdjacentHTML('beforeend', eventRowHtml(event));
+});
+
+socket.on("event_updated", function(event) {
+  const row = document.getElementById(`event-row-${event.id}`);
+  if (row) {
+    row.outerHTML = eventRowHtml(event);
+  }
+});
+
+socket.on("event_deleted", function(data) {
+  const row = document.getElementById(`event-row-${data.id}`);
+  if (row) row.remove();
+});
 </script>
 {% endblock %}

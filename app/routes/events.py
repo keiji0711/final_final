@@ -75,10 +75,24 @@ def add_event():
         (event_name, event_date, semester, cutoff_time)
     )
     conn.commit()
+    new_id = cur.lastrowid
     conn.close()
 
-    flash(f"Event '{event_name}' added successfully!", "success")
+    event_data = {
+        "id": new_id,
+        "event_name": event_name,
+        "event_date": event_date,
+        "semester": semester,
+        "cutoff_time": cutoff_time
+    }
+
+    # Emit to all clients
+    if socketio:
+        socketio.emit("event_added", event_data)
+
+    flash("Event created successfully!", "success")
     return redirect(url_for("event.event"))
+
 
 # --------------------------
 # Update Event
@@ -104,8 +118,20 @@ def update_event(event_id):
     conn.commit()
     conn.close()
 
-    flash(f"Event '{event_name}' updated successfully!", "success")
+    event_data = {
+        "id": event_id,
+        "event_name": event_name,
+        "event_date": event_date,
+        "semester": semester,
+        "cutoff_time": cutoff_time
+    }
+
+    if socketio:
+        socketio.emit("event_updated", event_data)
+
+    flash("Event updated successfully!", "success")
     return redirect(url_for("event.event"))
+
 
 # --------------------------
 # Delete Event
@@ -117,14 +143,22 @@ def delete_event(event_id):
     cur = conn.cursor()
     cur.execute("SELECT event_name FROM events WHERE id=?", (event_id,))
     event = cur.fetchone()
-    if event:
-        cur.execute("DELETE FROM events WHERE id=?", (event_id,))
-        conn.commit()
-        flash(f"Event '{event['event_name']}' deleted successfully!", "success")
-    else:
+    if not event:
+        conn.close()
         flash("Event not found.", "error")
+        return redirect(url_for("event.event"))
+
+    cur.execute("DELETE FROM events WHERE id=?", (event_id,))
+    conn.commit()
     conn.close()
+
+    if socketio:
+        socketio.emit("event_deleted", {"id": event_id})
+
+    flash("Event deleted successfully!", "success")
     return redirect(url_for("event.event"))
+
+
 
 # --------------------------
 # View Attendance Page
