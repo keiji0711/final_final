@@ -6,13 +6,23 @@
 
   <!-- Event Header + Live Clock + Export Button -->
   <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-    <div>
-      <h2 class="text-3xl font-bold text-white tracking-wide">📅 {{ event.event_name }} - Attendance</h2>
-      <p class="text-gray-300 mt-1">Date: {{ event.event_date }} | Semester: {{ event.semester }}</p>
-      {% if event.cutoff_time %}
-      <p class="text-gray-400 mt-1">⏱ Attendance Cutoff Time: {{ event.cutoff_time }}</p>
-      {% endif %}
-    </div>
+   <div>
+  <h2 class="text-3xl font-bold text-white tracking-wide">📅 {{ event.event_name }} - Attendance</h2>
+  <p class="text-gray-300 mt-1">Date: {{ event.event_date }} | Semester: {{ event.semester }}</p>
+  {% if event.cutoff_time %}
+    {% set hour = event.cutoff_time.split(':')[0] | int %}
+    {% set minute = event.cutoff_time.split(':')[1] %}
+    {% if hour > 12 %}
+      {% set hour = hour - 12 %}
+    {% elif hour == 0 %}
+      {% set hour = 12 %}
+    {% endif %}
+    <p class="text-gray-400 mt-1">
+      ⏱ Attendance Cutoff Time: {{ "%02d"|format(hour) }}:{{ minute }}
+    </p>
+  {% endif %}
+</div>
+
     <div class="flex gap-4 items-center">
       <div id="liveClockContainer"
            class="text-white font-mono text-2xl px-4 py-2 rounded-lg border border-gray-500 bg-gray-800 shadow-lg">
@@ -87,6 +97,8 @@
   </div>
 </div>
 
+<!-- 🔊 Beep sound -->
+<audio id="beepSound" src="{{ url_for('static', filename='time_in.mp3') }}" preload="auto"></audio>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
@@ -159,6 +171,9 @@ async function sendAttendance(barcode) {
       msgEl.textContent = `${barcode} ${isTimeIn ? "timed IN" : "timed OUT"} successfully.`;
       msgEl.className = isTimeIn ? "text-green-400" : "text-red-400";
       updateAttendanceRow(data.record);
+
+      // 🔊 Play beep sound on success
+      document.getElementById("beepSound").play();
     } else {
       msgEl.textContent = data.error || "Error recording attendance.";
       msgEl.className = "text-red-400";
@@ -197,6 +212,9 @@ function updateAttendanceRow(data) {
 socket.on("attendance_update", (data) => {
   if (data.event_id !== eventId) return;
   updateAttendanceRow(data);
+
+  // 🔊 Play beep sound for real-time updates too
+  document.getElementById("beepSound").play();
 });
 
 // ===== Form submit =====

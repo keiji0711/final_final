@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session,send_file
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, send_file
 from flask_socketio import SocketIO
 import sqlite3
 from datetime import datetime
@@ -62,7 +62,7 @@ def add_event():
     event_name = request.form.get("event_name")
     event_date = request.form.get("event_date")
     semester = request.form.get("semester")
-    cutoff_time = request.form.get("cutoff_time")
+    cutoff_time = request.form.get("cutoff_time")  # HTML <input type="time"> gives HH:MM (24hr)
 
     if not (event_name and event_date and semester and cutoff_time):
         flash("All fields are required.", "error")
@@ -93,7 +93,6 @@ def add_event():
     flash("Event created successfully!", "success")
     return redirect(url_for("event.event"))
 
-
 # --------------------------
 # Update Event
 # --------------------------
@@ -103,7 +102,7 @@ def update_event(event_id):
     event_name = request.form.get("event_name")
     event_date = request.form.get("event_date")
     semester = request.form.get("semester")
-    cutoff_time = request.form.get("cutoff_time")
+    cutoff_time = request.form.get("cutoff_time")  # still HH:MM 24-hour
 
     if not (event_name and event_date and semester and cutoff_time):
         flash("All fields are required.", "error")
@@ -132,7 +131,6 @@ def update_event(event_id):
     flash("Event updated successfully!", "success")
     return redirect(url_for("event.event"))
 
-
 # --------------------------
 # Delete Event
 # --------------------------
@@ -157,8 +155,6 @@ def delete_event(event_id):
 
     flash("Event deleted successfully!", "success")
     return redirect(url_for("event.event"))
-
-
 
 # --------------------------
 # View Attendance Page
@@ -230,13 +226,13 @@ def scan_attendance():
 
     today = datetime.now().strftime("%Y-%m-%d")
     now = datetime.now()
-    current_time_str = now.strftime("%I:%M %p").lstrip("0")  # 12-hour format
+    current_time_str = now.strftime("%H:%M")  # store as 24-hour for consistency
 
     cutoff_time_str = event["cutoff_time"]
     after_cutoff = False
     if cutoff_time_str:
-        cutoff_hour, cutoff_minute = map(int, cutoff_time_str.split(":"))
-        cutoff_dt = now.replace(hour=cutoff_hour, minute=cutoff_minute, second=0, microsecond=0)
+        cutoff_dt = datetime.strptime(cutoff_time_str, "%H:%M")  # parse 24-hour
+        cutoff_dt = now.replace(hour=cutoff_dt.hour, minute=cutoff_dt.minute, second=0, microsecond=0)
         if now > cutoff_dt:
             after_cutoff = True
 
@@ -345,9 +341,8 @@ def scan_attendance():
         conn.close()
         return jsonify({"error": "Invalid action"}), 400
 
-
 # --------------------------
-# # Export Attendance to Excel
+# Export Attendance to Excel
 # --------------------------
 @bp.route("/export_excel/<int:event_id>")
 @login_required
@@ -391,7 +386,7 @@ def export_excel(event_id):
 
         # Highlight late Time In cells
         late_format = workbook.add_format({
-            'bg_color': '#FFA500',  # orange
+            'bg_color': '#FFA500',
             'font_color': 'black'
         })
         for row_num, value in enumerate(df['Time In'], start=1):
@@ -401,4 +396,3 @@ def export_excel(event_id):
     output.seek(0)
     filename = f"Attendance_Event_{event_id}.xlsx"
     return send_file(output, download_name=filename, as_attachment=True)
-

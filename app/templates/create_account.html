@@ -138,15 +138,17 @@
         <!-- Password -->
         <div>
           <label for="password" class="block text-sm font-medium">Password</label>
-          <input type="password" id="password" name="password" required
+          <input type="password" id="password" name="password" required placeholder="At least 8 characters"
             class="w-full mt-1 p-2 rounded bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-green-500">
+          <p id="password-feedback" class="text-xs mt-1"></p>
         </div>
 
         <!-- Confirm Password -->
         <div>
           <label for="confirm_password" class="block text-sm font-medium">Confirm Password</label>
-          <input type="password" id="confirm_password" name="confirm_password" required
+          <input type="password" id="confirm_password" name="confirm_password" required placeholder="Re-enter password"
             class="w-full mt-1 p-2 rounded bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-green-500">
+          <p id="confirm-feedback" class="text-xs mt-1"></p>
         </div>
 
         <!-- User Type -->
@@ -163,8 +165,8 @@
         <div class="flex justify-end gap-3 pt-4">
           <button type="button" onclick="closeModal('accountModal')" 
             class="px-5 py-2 bg-gray-500 hover:bg-gray-400 text-white rounded-lg transition">Cancel</button>
-          <button type="submit" 
-            class="px-5 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition">
+          <button type="submit" id="submit-btn"
+            class="px-5 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
             ✅ Create Account
           </button>
         </div>
@@ -181,6 +183,46 @@
   function closeModal(id) {
     document.getElementById(id).classList.add("hidden");
   }
+
+  // Password live validation
+  const passwordInput = document.getElementById("password");
+  const confirmInput = document.getElementById("confirm_password");
+  const feedback = document.getElementById("password-feedback");
+  const confirmFeedback = document.getElementById("confirm-feedback");
+  const submitBtn = document.getElementById("submit-btn");
+
+  function validate() {
+    const password = passwordInput.value;
+    const confirm = confirmInput.value;
+    let valid = true;
+
+    // Password length check
+    if (password.length < 8) {
+      feedback.textContent = "❌ Password must be at least 8 characters.";
+      feedback.className = "text-red-400 text-xs mt-1";
+      valid = false;
+    } else {
+      feedback.textContent = "✅ Strong enough.";
+      feedback.className = "text-green-400 text-xs mt-1";
+    }
+
+    // Confirm password match
+    if (confirm && password !== confirm) {
+      confirmFeedback.textContent = "❌ Passwords do not match.";
+      confirmFeedback.className = "text-red-400 text-xs mt-1";
+      valid = false;
+    } else if (confirm && password === confirm) {
+      confirmFeedback.textContent = "✅ Passwords match.";
+      confirmFeedback.className = "text-green-400 text-xs mt-1";
+    } else {
+      confirmFeedback.textContent = "";
+    }
+
+    submitBtn.disabled = !valid;
+  }
+
+  passwordInput.addEventListener("input", validate);
+  confirmInput.addEventListener("input", validate);
 </script>
 
 <!-- Flash Animation -->

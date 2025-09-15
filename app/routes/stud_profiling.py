@@ -72,6 +72,7 @@ def stud_profiling():
           AND ea.time_in IS NOT NULL
           AND ea.time_in != ''
           AND ea.time_in != 'Absent'
+          AND ea.time_in != 'Late'
     """, (usn,))
     attended_count = cur.fetchone()["attended_count"]
 
@@ -85,12 +86,25 @@ def stud_profiling():
     """, (usn,))
     late_count = cur.fetchone()["late_count"]
 
-    # Missed events
-    missed_count = total_events - attended_count
+   # Count no timeout (only for existing events)
+    cur.execute("""
+        SELECT COUNT(*) as no_timeout_count
+        FROM event_attendance ea
+        JOIN events e ON ea.event_id = e.id
+        WHERE ea.usn = ?
+        AND (ea.time_in IS NOT NULL AND ea.time_in != '')  -- must have time_in
+        AND (ea.time_out IS NULL OR ea.time_out = '')      -- missing time_out
+    """, (usn,))
 
-    # Build event history with proper status
+    no_timeout_count = cur.fetchone()["no_timeout_count"]
+
+    # Missed events
+    missed_count = total_events - (attended_count + late_count)
+
+    # Build event history with proper status including no timeout
     cur.execute("""
         SELECT e.id, e.event_name, e.event_date,
+               ea.time_in, ea.time_out,
                CASE
                    WHEN ea.time_in IS NULL OR ea.time_in = '' OR ea.time_in = 'Absent' THEN 'Missed'
                    WHEN ea.time_in = 'Late' THEN 'Late'
@@ -110,6 +124,7 @@ def stud_profiling():
         attended=attended_count,
         missed=missed_count,
         late=late_count,
+        no_timeout=no_timeout_count,
         events=event_history,
         user_name=session.get("username", "Officer")
     )

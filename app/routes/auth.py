@@ -32,6 +32,14 @@ def login():
         password = request.form.get("password", "").strip()
         user_type = request.form.get("user_type")
 
+        # Track failed attempts in session
+        if "failed_attempts" not in session:
+            session["failed_attempts"] = 0
+
+        # If already 3 fails -> redirect to empty page
+        if session["failed_attempts"] >= 3:
+            return redirect(url_for("auth.locked"))
+
         if not username or not password:
             flash("⚠️ Please fill in all fields!", "warning")
             return redirect(url_for("auth.login"))
@@ -43,21 +51,33 @@ def login():
         conn.close()
 
         if user and check_password_hash(user["password"], password):
-            # store session
+            # Reset attempts after success
+            session["failed_attempts"] = 0
+
             session["user_id"] = user["id"]
             session["username"] = user["username"]
             session["user_type"] = user["user_type"]
 
             flash(f"✅ Welcome, {user['username']} ({user['user_type'].capitalize()})!", "success")
-
-            # redirect all users to the same dashboard
             return redirect(url_for("dashboard.dashboard"))
-
         else:
+            session["failed_attempts"] += 1
             flash("❌ Invalid username, password, or role!", "danger")
+
+            # After 3 fails -> redirect to empty page
+            if session["failed_attempts"] >= 3:
+                return redirect(url_for("auth.locked"))
+
             return redirect(url_for("auth.login"))
 
     return render_template("login.html")
+
+
+# --- Empty Page Route ---
+@bp.route("/locked")
+@login_required
+def locked():
+    return render_template("locked.html")
 
 # --- Logout ---
 @bp.route("/logout")
@@ -88,6 +108,12 @@ def create_account():
         # Check all fields
         if not all([username, password, confirm_password, user_type]):
             flash("⚠️ All fields are required!", "warning")
+            conn.close()
+            return redirect(url_for("auth.create_account"))
+
+        # Password length check
+        if len(password) < 8:
+            flash("❌ Password must be at least 8 characters long!", "danger")
             conn.close()
             return redirect(url_for("auth.create_account"))
 
@@ -131,6 +157,7 @@ def create_account():
     conn.close()
 
     return render_template("create_account.html", users=users)
+
 
 # --- Update Account ---
 @bp.route("/update_account/<int:user_id>", methods=["POST"])

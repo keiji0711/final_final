@@ -41,12 +41,12 @@
           <p>{{ student.course }}</p>
         </div>
         <div>
-          <p class="font-semibold text-gray-400">Gmail:</p>
-          <p>{{ student.gmail }}</p>
+          <p class="font-semibold text-gray-400">Contact:</p>
+          <p>{{ student.contact }}</p>
         </div>
         <div class="sm:col-span-2 lg:col-span-3">
           <p class="font-semibold text-gray-400">Address:</p>
-          <p>{{ student.address }}</p>
+          <p>N/A</p>
         </div>
       </div>
     </div>
@@ -59,7 +59,7 @@
     <!-- Attendance Stats -->
     <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-6">
       <h3 class="text-xl font-semibold text-white mb-4">📊 Attendance Overview</h3>
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-4 gap-4">
         <div class="bg-gray-800 rounded-xl p-4 text-center shadow">
           <h4 class="text-lg font-medium text-green-400">Attended</h4>
           <p class="text-3xl font-bold text-white mt-2">{{ attended }}</p>
@@ -71,6 +71,10 @@
         <div class="bg-gray-800 rounded-xl p-4 text-center shadow">
           <h4 class="text-lg font-medium text-yellow-400">Late</h4>
           <p class="text-3xl font-bold text-white mt-2">{{ late }}</p>
+        </div>
+        <div class="bg-gray-800 rounded-xl p-4 text-center shadow">
+          <h4 class="text-lg font-medium text-purple-400">No Timeout</h4>
+          <p class="text-3xl font-bold text-white mt-2">{{ no_timeout }}</p>
         </div>
       </div>
     </div>
@@ -98,18 +102,30 @@
               <td class="px-4 py-3 text-white">{{ event.event_name }}</td>
               <td class="px-4 py-3 text-gray-300">{{ event.event_date }}</td>
               <td class="px-4 py-3">
-                <span class="px-2 py-1 
-                  {% if event.status=='Attended' %}
-                    bg-green-600
-                  {% elif event.status=='Missed' %}
-                    bg-red-600
-                  {% elif event.status=='Late' %}
-                    bg-yellow-600
-                  {% endif %}
-                  text-white text-xs rounded">
-                  {{ event.status }}
-                </span>
-              </td>
+  <span class="px-2 py-1 
+    {% if event.time_in == "" or event.time_in is none or event.time_in == "Absent" %}
+      bg-red-600
+    {% elif event.time_in == "Late" %}
+      bg-yellow-600
+    {% elif event.time_out == "" or event.time_out is none %}
+      bg-purple-600
+    {% else %}
+      bg-green-600
+    {% endif %}
+    text-white text-xs rounded">
+    
+    {% if event.time_in == "" or event.time_in is none or event.time_in == "Absent" %}
+      Missed
+    {% elif event.time_in == "Late" %}
+      Late
+    {% elif event.time_out == "" or event.time_out is none %}
+      No Timeout
+    {% else %}
+      Attended
+    {% endif %}
+  </span>
+</td>
+
             </tr>
             {% endfor %}
           </tbody>
