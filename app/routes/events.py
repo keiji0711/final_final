@@ -47,11 +47,40 @@ def login_required(func):
 def event():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM events ORDER BY event_date ASC")
+    cur.execute("SELECT * FROM events ORDER BY event_date DESC")
     rows = cur.fetchall()
+
+    events = []
+    for row in rows:
+        event = dict(row)
+
+        # Calculate attendance stats for this event
+        cur.execute("""
+            SELECT
+                SUM(CASE WHEN time_in NOT NULL AND time_in != 'Late' THEN 1 ELSE 0 END) AS attended,
+                SUM(CASE WHEN time_in = 'Late' THEN 1 ELSE 0 END) AS late,
+                SUM(CASE WHEN time_in NOT NULL AND (time_out IS NULL OR time_out = '') THEN 1 ELSE 0 END) AS no_time_out,
+                (SELECT COUNT(*) FROM student_info) - COUNT(*) AS absent
+            FROM event_attendance
+            WHERE event_id = ?
+        """, (event['id'],))
+        stats_row = cur.fetchone()
+        if stats_row:
+            stats = {
+                "attended": stats_row["attended"] or 0,
+                "late": stats_row["late"] or 0,
+                "no_time_out": stats_row["no_time_out"] or 0,
+                "absent": stats_row["absent"] or 0
+            }
+        else:
+            stats = {"attended":0,"late":0,"no_time_out":0,"absent":0}
+
+        event["stats"] = stats
+        events.append(event)
+
     conn.close()
-    events = [dict(row) for row in rows]
     return render_template("events.html", events=events, user_name=session.get("username", "Officer"))
+
 
 # --------------------------
 # Create Event

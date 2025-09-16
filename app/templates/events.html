@@ -23,9 +23,7 @@
           <div class="relative bg-white text-black px-6 py-4 rounded-lg shadow-lg w-80 h-28 flex flex-col items-center justify-center pointer-events-auto animate-fade-in">
             <span class="text-center font-semibold text-lg">{{ message }}</span>
             <button onclick="this.parentElement.remove()" 
-                    class="absolute top-2 right-2 text-black hover:text-gray-500 text-xl font-bold">
-              &times;
-            </button>
+                    class="absolute top-2 right-2 text-black hover:text-gray-500 text-xl font-bold">&times;</button>
           </div>
         {% endfor %}
       </div>
@@ -48,7 +46,8 @@
         </thead>
         <tbody id="eventTableBody">
           {% for event in events %}
-          <tr id="event-row-{{ event.id }}" class="border-b border-gray-700 hover:bg-gray-800 transition">
+          <tr id="event-row-{{ event.id }}" class="border-b border-gray-700 hover:bg-gray-800 transition cursor-pointer"
+              onclick='openStatsModal({{ event.stats | tojson }}, "{{ event.event_name }}")'>
             <td class="px-4 py-3 font-medium text-white">{{ event.event_name }}</td>
             <td class="px-4 py-3 text-gray-300">{{ event.event_date }}</td>
             <td class="px-4 py-3 text-gray-300">{{ event.semester }}</td>
@@ -64,19 +63,20 @@
 
               <!-- View Attendance -->
               <a href="{{ url_for('event.view_attendance', event_id=event.id) }}"
+                 onclick="event.stopPropagation()"
                  class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm shadow">
                  View
               </a>
 
               {% if session.get("user_type") != "officer" %}
               <!-- Edit Event -->
-              <button onclick='openUpdateModal({{ event | tojson }})'
+              <button onclick='event.stopPropagation(); openUpdateModal({{ event | tojson }})'
                       class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm shadow">
                 Edit
               </button>
 
               <!-- Delete Event -->
-              <form action="{{ url_for('event.delete_event', event_id=event.id) }}" method="POST" class="inline">
+              <form action="{{ url_for('event.delete_event', event_id=event.id) }}" method="POST" class="inline" onsubmit="event.stopPropagation()">
                 <button type="submit"
                         class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm shadow"
                         onclick="return confirm('Are you sure you want to delete this event?')">
@@ -182,6 +182,43 @@
     <button onclick="closeUpdateModal()" class="absolute top-3 right-3 text-gray-400 hover:text-white text-xl font-bold">&times;</button>
   </div>
 </div>
+
+<!-- Redesigned Attendance Stats Modal -->
+<div id="statsModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center hidden z-50">
+  <div class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
+    <h3 id="statsModalTitle" class="text-2xl font-bold text-white mb-6 text-center">Attendance Stats</h3>
+    
+    <div class="grid grid-cols-2 gap-4 mb-6">
+      <!-- Card Style Stats -->
+      <div class="bg-gray-700 rounded-lg p-4 flex flex-col items-center justify-center shadow hover:scale-105 transition">
+        <span class="text-green-400 text-3xl font-bold" id="statsAttended">0</span>
+        <span class="text-gray-200 mt-1">Attended ✅</span>
+      </div>
+      <div class="bg-gray-700 rounded-lg p-4 flex flex-col items-center justify-center shadow hover:scale-105 transition">
+        <span class="text-yellow-400 text-3xl font-bold" id="statsLate">0</span>
+        <span class="text-gray-200 mt-1">Late 🕒</span>
+      </div>
+      <div class="bg-gray-700 rounded-lg p-4 flex flex-col items-center justify-center shadow hover:scale-105 transition">
+        <span class="text-purple-400 text-3xl font-bold" id="statsNoTimeOut">0</span>
+        <span class="text-gray-200 mt-1">No Time Out ⏱️</span>
+      </div>
+      <div class="bg-gray-700 rounded-lg p-4 flex flex-col items-center justify-center shadow hover:scale-105 transition">
+        <span class="text-red-400 text-3xl font-bold" id="statsAbsent">0</span>
+        <span class="text-gray-200 mt-1">Absent ❌</span>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="w-full h-4 bg-gray-600 rounded-full overflow-hidden flex">
+      <div id="barAttended" class="h-4 bg-green-500 transition-all"></div>
+      <div id="barLate" class="h-4 bg-yellow-500 transition-all"></div>
+      <div id="barNoTimeOut" class="h-4 bg-purple-500 transition-all"></div>
+      <div id="barAbsent" class="h-4 bg-red-500 transition-all"></div>
+    </div>
+
+    <button onclick="closeStatsModal()" class="absolute top-3 right-3 text-gray-400 hover:text-white text-xl font-bold">&times;</button>
+  </div>
+</div>
 {% endif %}
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
@@ -199,8 +236,24 @@ function openUpdateModal(event) {
 }
 function closeUpdateModal() { document.getElementById("updateEventModal").classList.add("hidden"); }
 
+function openStatsModal(stats, eventName) {
+  document.getElementById("statsModalTitle").textContent = `Attendance Stats: ${eventName}`;
+  const total = stats.attended + stats.late + stats.no_time_out + stats.absent || 1;
+  document.getElementById("statsAttended").textContent = stats.attended;
+  document.getElementById("statsLate").textContent = stats.late;
+  document.getElementById("statsNoTimeOut").textContent = stats.no_time_out;
+  document.getElementById("statsAbsent").textContent = stats.absent;
+  document.getElementById("barAttended").style.width = (stats.attended/total*100)+'%';
+  document.getElementById("barLate").style.width = (stats.late/total*100)+'%';
+  document.getElementById("barNoTimeOut").style.width = (stats.no_time_out/total*100)+'%';
+  document.getElementById("barAbsent").style.width = (stats.absent/total*100)+'%';
+  document.getElementById("statsModal").classList.remove("hidden");
+}
+function closeStatsModal() { document.getElementById("statsModal").classList.add("hidden"); }
+
 // --- Socket.IO Real-time CRUD ---
 const socket = io();
+const sessionUserType = "{{ session.get('user_type') }}";
 
 function formatCutoffTime(cutoff_time) {
   if (!cutoff_time) return '-';
@@ -209,50 +262,36 @@ function formatCutoffTime(cutoff_time) {
   const m = parseInt(minute, 10);
   const ampm = h < 12 ? "AM" : "PM";
   h = h % 12 || 12;
-  return `${h}:${m.toString().padStart(2, '0')} ${ampm}`;
+  return `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
 }
 
 function eventRowHtml(event) {
-  return `<tr id="event-row-${event.id}" class="border-b border-gray-700 hover:bg-gray-800 transition">
+  return `<tr id="event-row-${event.id}" class="border-b border-gray-700 hover:bg-gray-800 transition cursor-pointer"
+          onclick='openStatsModal(${JSON.stringify(event.stats)}, "${event.event_name}")'>
     <td class="px-4 py-3 font-medium text-white">${event.event_name}</td>
     <td class="px-4 py-3 text-gray-300">${event.event_date}</td>
     <td class="px-4 py-3 text-gray-300">${event.semester}</td>
     <td class="px-4 py-3 text-gray-300">${formatCutoffTime(event.cutoff_time)}</td>
     <td class="px-4 py-3 text-center space-x-2">
-      <a href="/attendance/${event.id}"
-         class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm shadow">
-         View
-      </a>
+      <a href="/attendance/${event.id}" onclick="event.stopPropagation()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm shadow">View</a>
       ${sessionUserType !== "officer" ? `
-      <button onclick='openUpdateModal(${JSON.stringify(event)})'
-              class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm shadow">
-        Edit
-      </button>
-      <form action="/delete_event/${event.id}" method="POST" class="inline">
-        <button type="submit"
-                class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm shadow"
-                onclick="return confirm('Are you sure you want to delete this event?')">
-          Delete
-        </button>
+      <button onclick='event.stopPropagation(); openUpdateModal(${JSON.stringify(event)})' class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm shadow">Edit</button>
+      <form action="/delete_event/${event.id}" method="POST" class="inline" onsubmit="event.stopPropagation()">
+        <button type="submit" onclick="return confirm('Are you sure?')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm shadow">Delete</button>
       </form>` : ""}
     </td>
   </tr>`;
 }
 
-// Pass user_type from Flask session into JS
-const sessionUserType = "{{ session.get('user_type') }}";
-
 socket.on("event_added", function(event) {
-  if (document.getElementById(`event-row-${event.id}`)) return; // Prevent duplicate
+  if (document.getElementById(`event-row-${event.id}`)) return;
   const tbody = document.getElementById("eventTableBody");
   tbody.insertAdjacentHTML('beforeend', eventRowHtml(event));
 });
 
 socket.on("event_updated", function(event) {
   const row = document.getElementById(`event-row-${event.id}`);
-  if (row) {
-    row.outerHTML = eventRowHtml(event);
-  }
+  if (row) row.outerHTML = eventRowHtml(event);
 });
 
 socket.on("event_deleted", function(data) {

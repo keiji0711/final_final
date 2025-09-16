@@ -172,8 +172,10 @@ async function sendAttendance(barcode) {
       msgEl.className = isTimeIn ? "text-green-400" : "text-red-400";
       updateAttendanceRow(data.record);
 
-      // 🔊 Play beep sound on success
-      document.getElementById("beepSound").play();
+      // 🔊 Play beep ONLY on the device that scanned
+      const beep = document.getElementById("beepSound");
+      beep.currentTime = 0;
+      beep.play();
     } else {
       msgEl.textContent = data.error || "Error recording attendance.";
       msgEl.className = "text-red-400";
@@ -212,9 +214,7 @@ function updateAttendanceRow(data) {
 socket.on("attendance_update", (data) => {
   if (data.event_id !== eventId) return;
   updateAttendanceRow(data);
-
-  // 🔊 Play beep sound for real-time updates too
-  document.getElementById("beepSound").play();
+  // ❌ No beep here → prevents all devices from beeping
 });
 
 // ===== Form submit =====
